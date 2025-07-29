@@ -43,7 +43,32 @@ async function signin(data) {
     }
 }
 
+async function isAuthenticated(token) {
+    try {
+        if (!token) {
+            throw new AppError('Missing jwt token', StatusCodes.INTERNAL_SERVER_ERROR)
+        }
+        const response = AUTH.verifyToken(token)
+        const user = userRepo.get(response.id)
+        if (!user) {
+            throw new AppError('No user found', StatusCodes.INTERNAL_SERVER_ERROR)
+        }
+        return response.id
+    } catch (error) {
+        if (error instanceof AppError) throw error
+        if (error.name == 'JsonWebTokenError') {
+            throw new AppError('Invalid jwt Token', StatusCodes.BAD_REQUEST)
+        }
+        if (error.name == 'TokenExpiredError') {
+            throw new AppError('Token has expired', StatusCodes.BAD_REQUEST)
+        }
+        console.log(error)
+        throw new AppError('Something went wrong', StatusCodes.INTERNAL_SERVER_ERROR)
+    }
+}
+
 module.exports = {
     create,
-    signin
+    signin,
+    isAuthenticated
 }
